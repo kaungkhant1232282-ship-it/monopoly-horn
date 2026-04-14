@@ -1,55 +1,43 @@
-* { box-sizing: border-box; }
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #202124;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-}
-
 .monopoly-board {
     display: grid;
-    grid-template-columns: repeat(11, 1fr);
-    grid-template-rows: repeat(11, 1fr);
+    grid-template-columns: repeat(8, 1fr); /* 8 column */
+    grid-template-rows: repeat(8, 1fr);    /* 8 row */
     width: 98vw;
     height: 98vw;
-    max-width: 600px;
-    max-height: 600px;
-    background-color: #bfdbfe;
-    border: 3px solid #000;
+    background: #c7e5d5;
+    border: 3px solid #333;
+    position: relative;
 }
 
-.center-ui {
-    grid-column: 2 / 11;
-    grid-row: 2 / 11;
+.center-board {
+    grid-column: 2 / 8; /* ၂ ကွက်မြောက်ကနေ ၈ ကွက်မြောက်အထိ ချန်မယ် */
+    grid-row: 2 / 8;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: white;
-    font-family: Arial, sans-serif;
+    background: white;
 }
 
-.square {
-    border: 1px solid #333;
+.slot {
+    border: 1px solid #000;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 7px;
-    background: #f8fafc;
-    word-break: break-all;
+    font-size: 8px;
+    background: white;
+    font-weight: bold;
 }
 
-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+/* ထောင့်ကွက်တွေကို အရောင်ခွဲမယ် */
+.corner { background: #f1c40f !important; }
+
+#player {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background: red;
+    border-radius: 50%;
+    z-index: 100;
+    transition: all 0.4s ease;
 }
