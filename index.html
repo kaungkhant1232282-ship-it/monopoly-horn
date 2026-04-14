@@ -2,123 +2,118 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Monopoly TMA</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Checkers</title>
     <style>
-        /* CSS ကို ဒီထဲမှာ တစ်ခါတည်း ထည့်လိုက်မယ် */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #2c3e50; margin: 0; padding: 0;
-            display: flex; justify-content: center; align-items: center; height: 100vh;
-        }
-        .game-container { text-align: center; }
-        .monopoly-board {
+        body { font-family: sans-serif; background: #34495e; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; }
+        h2 { margin-bottom: 10px; }
+        .board {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 95vw; height: 95vw;
-            max-width: 500px; max-height: 500px;
-            background: #ecf0f1; border: 4px solid #333;
-            position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            width: 320px; height: 320px;
+            border: 5px solid #2c3e50;
         }
-        .center-board {
-            grid-column: 2 / 8; grid-row: 2 / 8;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            background: #fff; border: 2px dashed #bdc3c7;
+        .square {
+            width: 80px; height: 80px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
         }
-        .slot {
-            border: 1px solid #333; background: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 9px; font-weight: bold; color: #2c3e50;
+        .black { background-color: #7f8c8d; }
+        .white { background-color: #ecf0f1; }
+        .piece {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            transition: 0.3s;
         }
-        .corner { background: #f1c40f !important; font-size: 11px; }
-        #dice-display { font-size: 40px; margin-bottom: 10px; }
-        #roll-btn { 
-            padding: 10px 25px; font-size: 18px; font-weight: bold;
-            background: #27ae60; color: white; border: none; border-radius: 5px;
-            cursor: pointer; box-shadow: 0 4px #1e8449;
-        }
-        #roll-btn:active { box-shadow: 0 0; transform: translateY(4px); }
-        #player {
-            position: absolute; width: 20px; height: 20px;
-            background: #e74c3c; border-radius: 50%; border: 2px solid white;
-            z-index: 100; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-        }
-        #msg { color: #2c3e50; margin-top: 5px; font-weight: bold; }
+        .player-piece { background-color: #e74c3c; box-shadow: 0 4px #c0392b; }
+        .bot-piece { background-color: #2ecc71; box-shadow: 0 4px #27ae60; }
+        .selected { border: 4px solid #f1c40f; }
+        #status { margin-top: 20px; font-size: 1.2rem; }
+        button { margin-top: 15px; padding: 10px 20px; background: #e67e22; border: none; color: white; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="game-container">
-    <div id="board" class="monopoly-board">
-        <div class="center-board">
-            <div id="dice-display">🎲</div>
-            <button id="roll-btn" onclick="playTurn()">ROLL</button>
-            <p id="msg">ကစားမယ်!</p>
-        </div>
-        <div id="player"></div>
-    </div>
-</div>
+    <h2>ကျားကွက် (၄x၄ အသေးစား)</h2>
+    <div id="board" class="board"></div>
+    <div id="status">မင်းအလှည့် (အနီ)</div>
+    <button onclick="resetGame()">ဂိမ်းပြန်စမည်</button>
 
-<script>
-    // JavaScript ကိုလည်း ဒီထဲမှာ တစ်ခါတည်း ထည့်မယ်
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    <script>
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        let boardState = [
+            ['bot', '', 'bot', ''],
+            ['', '', '', ''],
+            ['', '', '', ''],
+            ['', 'player', '', 'player']
+        ];
+        let selected = null;
 
-    const board = document.getElementById('board');
-    const totalSlots = 28;
-    const slots = [];
+        function createBoard() {
+            boardElement.innerHTML = '';
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(r + c) % 2 === 0 ? 'white' : 'black'}`;
+                    square.onclick = () => handleSquareClick(r, c);
+                    
+                    if (boardState[r][c] === 'player') {
+                        const piece = document.createElement('div');
+                        piece.className = 'piece player-piece';
+                        if (selected && selected.r === r && selected.c === c) piece.classList.add('selected');
+                        square.appendChild(piece);
+                    } else if (boardState[r][c] === 'bot') {
+                        const piece = document.createElement('div');
+                        piece.className = 'piece bot-piece';
+                        square.appendChild(piece);
+                    }
+                    boardElement.appendChild(square);
+                }
+            }
+        }
 
-    // Board ဆောက်ခြင်း
-    for (let i = 0; i < totalSlots; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'slot';
-        slot.id = `slot-${i}`;
-        
-        let row, col;
-        if (i < 8) { row = 1; col = i + 1; }
-        else if (i < 15) { row = i - 6; col = 8; }
-        else if (i < 22) { row = 8; col = 22 - i; }
-        else { row = 29 - i; col = 1; }
+        function handleSquareClick(r, c) {
+            if (boardState[r][c] === 'player') {
+                selected = { r, c };
+                createBoard();
+            } else if (selected && boardState[r][c] === '') {
+                // အခြေခံ ရွှေ့ကွက် (အပေါ်တစ်ကွက် တက်ခြင်း)
+                if (Math.abs(selected.c - c) <= 1 && selected.r - r === 1) {
+                    boardState[selected.r][selected.c] = '';
+                    boardState[r][c] = 'player';
+                    selected = null;
+                    createBoard();
+                    statusElement.innerText = "စက်အလှည့်...";
+                    setTimeout(botMove, 1000);
+                }
+            }
+        }
 
-        slot.style.gridRow = row;
-        slot.style.gridColumn = col;
-        
-        if (i === 0) { slot.innerText = "GO"; slot.classList.add('corner'); }
-        else if (i === 7) { slot.innerText = "JAIL"; slot.classList.add('corner'); }
-        else if (i === 14) { slot.innerText = "FREE"; slot.classList.add('corner'); }
-        else if (i === 21) { slot.innerText = "POLICE"; slot.classList.add('corner'); }
-        else { slot.innerText = i; }
+        function botMove() {
+            // စက်က အရိုးရှင်းဆုံး ရွှေ့မယ့် Logic
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (boardState[r][c] === 'bot' && boardState[r+1][c] === '') {
+                        boardState[r][c] = '';
+                        boardState[r+1][c] = 'bot';
+                        createBoard();
+                        statusElement.innerText = "မင်းအလှည့် (အနီ)";
+                        return;
+                    }
+                }
+            }
+        }
 
-        board.appendChild(slot);
-        slots.push(slot);
-    }
+        function resetGame() {
+            boardState = [['bot', '', 'bot', ''], ['', '', '', ''], ['', '', '', ''], ['', 'player', '', 'player']];
+            createBoard();
+            statusElement.innerText = "မင်းအလှည့် (အနီ)";
+        }
 
-    let currentPos = 0;
-    const player = document.getElementById('player');
-
-    // Player ကို နေရာစချခြင်း
-    function updatePlayerPosition() {
-        const target = document.getElementById(`slot-${currentPos}`);
-        player.style.top = target.offsetTop + (target.offsetHeight/2 - 10) + 'px';
-        player.style.left = target.offsetLeft + (target.offsetWidth/2 - 10) + 'px';
-    }
-
-    window.onload = updatePlayerPosition;
-
-    function playTurn() {
-        const dice = Math.floor(Math.random() * 6) + 1;
-        const diceIcons = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        document.getElementById('dice-display').innerText = diceIcons[dice-1];
-        
-        currentPos = (currentPos + dice) % totalSlots;
-        updatePlayerPosition();
-        document.getElementById('msg').innerText = `ရလဒ်: ${dice}`;
-    }
-</script>
-
+        createBoard();
+    </script>
 </body>
 </html>
+
